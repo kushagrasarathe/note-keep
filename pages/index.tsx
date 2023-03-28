@@ -1,3 +1,13 @@
+import { db } from "@/src/configs/firebaseConfig";
+import {
+  addDoc,
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  setDoc,
+} from "@firebase/firestore";
+import { randomUUID } from "crypto";
 import Head from "next/head";
 import { useState } from "react";
 
@@ -16,14 +26,30 @@ export default function Home() {
     isPinned: false,
   });
 
+  const notesCollectionRef = collection(db, "notes");
+
   const onChnage = (
     event: React.FormEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
-    const { name, value } = event.target;
+    const { name, value } = event.target as
+      | HTMLInputElement
+      | HTMLTextAreaElement;
     setNote((prevNote) => ({
       ...prevNote,
       [name]: value,
     }));
+  };
+
+  const getNotes = async () => {
+    const querySnapshot = await getDocs(notesCollectionRef);
+    querySnapshot.forEach((doc) => {
+      console.log(doc.id, " => ", doc.data());
+    });
+  };
+
+  const saveNote = async () => {
+    console.log(note);
+    await addDoc(notesCollectionRef, note);
   };
 
   return (
@@ -50,6 +76,7 @@ export default function Home() {
               type="text"
               placeholder="Type here"
               className="input input-primary input-bordered w-full max-w-xs bg-transparent"
+              required={true}
             />
           </div>
           <div className="form-control w-full max-w-xs">
@@ -63,6 +90,7 @@ export default function Home() {
               type="text"
               placeholder="Type here"
               className="input input-primary input-bordered w-full max-w-xs bg-transparent"
+              required={true}
             />
           </div>
           <div className="form-control w-full max-w-xs">
@@ -75,11 +103,16 @@ export default function Home() {
               value={note.body}
               className="textarea textarea-primary textarea-bordered h-24 bg-transparent"
               placeholder="Bio"
+              required={true}
             ></textarea>
           </div>
-          <div className=" mt-4">
-          <button className=" btn btn-primary">Save</button>
-
+          <div className=" mt-4 flex flex-col">
+            <button className=" btn btn-primary m-2" onClick={saveNote}>
+              Save
+            </button>
+            <button className=" btn btn-primary m-2" onClick={getNotes}>
+              getNotes
+            </button>
           </div>
         </div>
       </main>
