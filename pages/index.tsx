@@ -2,6 +2,7 @@ import { db } from "@/src/configs/firebaseConfig";
 import {
   addDoc,
   collection,
+  deleteDoc,
   doc,
   getDoc,
   getDocs,
@@ -9,7 +10,7 @@ import {
 } from "@firebase/firestore";
 import { randomUUID } from "crypto";
 import Head from "next/head";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 interface Note {
   title: string;
@@ -26,6 +27,12 @@ export default function Home() {
     isPinned: false,
   });
 
+  const [fetchedNotes, setFetchedNotes] = useState<any[]>([]);
+
+  useEffect(() => {
+    getNotes();
+  }, []);
+
   const notesCollectionRef = collection(db, "notes");
 
   const onChnage = (
@@ -41,15 +48,23 @@ export default function Home() {
   };
 
   const getNotes = async () => {
-    const querySnapshot = await getDocs(notesCollectionRef);
-    querySnapshot.forEach((doc) => {
-      console.log(doc.id, " => ", doc.data());
-    });
+    const data = await getDocs(notesCollectionRef);
+    // setFetchedNotes(data.docs.map((doc) => doc.data()));
+    setFetchedNotes(data.docs.map((doc) => ({ ...doc.data(), id: doc.id })));
   };
+
+  console.log(fetchedNotes);
 
   const saveNote = async () => {
     console.log(note);
     await addDoc(notesCollectionRef, note);
+    getNotes();
+  };
+
+  const deleteNote = async (id: string) => {
+    const noteDoc = doc(db, "notes", id);
+    await deleteDoc(noteDoc);
+    getNotes();
   };
 
   return (
@@ -101,7 +116,7 @@ export default function Home() {
               name="body"
               onChange={onChnage}
               value={note.body}
-              className="textarea textarea-primary textarea-bordered h-24 bg-transparent"
+              className="textarea textarea-primary textarea-bordered text-base h-24 bg-transparent"
               placeholder="Bio"
               required={true}
             ></textarea>
@@ -116,6 +131,30 @@ export default function Home() {
           </div>
         </div>
       </main>
+
+      <div className=" grid grid-cols-3 gap-10 px-10 pb-40">
+        {fetchedNotes.map((note, idx) => (
+          <div
+            key={idx}
+            className=" col-span-1 card w-96 bg-violet-300 shadow-xl"
+          >
+            <div className="card-body">
+              <h2 className="card-title">{note.title}</h2>
+              <p>{note.tagline}</p>
+              <p>{note.body}</p>
+              <div className="card-actions justify-end">
+                <button className="btn btn-primary">Edit</button>
+                <button
+                  onClick={() => deleteNote(note.id)}
+                  className="btn bg-red-600 text-white border-0 hover:bg-red-500"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
     </>
   );
 }
