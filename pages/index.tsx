@@ -6,13 +6,19 @@ import {
   doc,
   getDoc,
   getDocs,
+  limit,
+  onSnapshot,
+  orderBy,
+  query,
   setDoc,
 } from "@firebase/firestore";
-import { randomUUID } from "crypto";
 import Head from "next/head";
 import { useEffect, useState } from "react";
 
+const notesCollectionRef = collection(db, "notes");
+
 interface Note {
+  id?: string;
   title: string;
   tagline: string;
   body: string;
@@ -20,7 +26,7 @@ interface Note {
 }
 
 export default function Home() {
-  const [note, setNote] = useState<Note>({
+  const [data, setData] = useState<Note>({
     title: "",
     tagline: "",
     body: "",
@@ -28,12 +34,52 @@ export default function Home() {
   });
 
   const [fetchedNotes, setFetchedNotes] = useState<any[]>([]);
+  const [notes, setNotes] = useState([]);
+  const [lastNote, setLastNote] = useState(null);
+  const [currentPage, setCurrentPage] = useState(0);
+
+  const notesPerPage = 6;
+  const pageCount = Math.ceil(notes.length / notesPerPage);
+
+  useEffect(() => {
+    const fetchNotes = async () => {
+      const q = query(
+        notesCollectionRef,
+        // orderBy("title"),
+        limit(notesPerPage)
+      );
+
+      const snapshot = await getDocs(q);
+      // Query the first page of docs
+      const first = query(collection(db, "notes"), orderBy("title"), limit(6));
+      const documentSnapshots = await getDocs(first);
+      const data = documentSnapshots.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+
+      console.log(data)
+
+      // console.log(documentSnapshots)
+      // Get the last visible document
+      const lastVisible =
+        documentSnapshots.docs[documentSnapshots.docs.length - 1];
+      console.log("last", lastVisible);
+      // const notesRef = db
+      //   .collection("notes")
+      //   .orderBy("createdAt", "desc")
+      //   .limit(notesPerPage);
+      // const snapshot = await notesRef.get();
+      // const data = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      // setNotes(data);
+      // setLastNote(snapshot.docs[snapshot.docs.length - 1]);
+    };
+    fetchNotes();
+  }, []);
 
   useEffect(() => {
     getNotes();
   }, []);
-
-  const notesCollectionRef = collection(db, "notes");
 
   const onChnage = (
     event: React.FormEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -41,7 +87,7 @@ export default function Home() {
     const { name, value } = event.target as
       | HTMLInputElement
       | HTMLTextAreaElement;
-    setNote((prevNote) => ({
+    setData((prevNote) => ({
       ...prevNote,
       [name]: value,
     }));
@@ -51,20 +97,25 @@ export default function Home() {
     const data = await getDocs(notesCollectionRef);
     // setFetchedNotes(data.docs.map((doc) => doc.data()));
     setFetchedNotes(data.docs.map((doc) => ({ ...doc.data(), id: doc.id })));
+
+    onSnapshot(notesCollectionRef, (snapshot) => {
+      const data = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      setFetchedNotes(data);
+    });
   };
 
-  console.log(fetchedNotes);
+  // console.log(fetchedNotes);
 
   const saveNote = async () => {
-    console.log(note);
-    await addDoc(notesCollectionRef, note);
-    getNotes();
+    console.log(data);
+    await addDoc(notesCollectionRef, data);
+    // getNotes();
   };
 
   const deleteNote = async (id: string) => {
     const noteDoc = doc(db, "notes", id);
     await deleteDoc(noteDoc);
-    getNotes();
+    // getNotes();
   };
 
   return (
@@ -73,7 +124,7 @@ export default function Home() {
         <title>Note Keep</title>
         <meta
           name="description"
-          content="A note keeping nextjs appliction to help you organize your workflow"
+          content="A data keeping nextjs appliction to help you organize your workflow"
         />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />
@@ -87,7 +138,7 @@ export default function Home() {
             <input
               name="title"
               onChange={onChnage}
-              value={note.title}
+              value={data.title}
               type="text"
               placeholder="Type here"
               className="input input-primary input-bordered w-full max-w-xs bg-transparent"
@@ -101,7 +152,7 @@ export default function Home() {
             <input
               name="tagline"
               onChange={onChnage}
-              value={note.tagline}
+              value={data.tagline}
               type="text"
               placeholder="Type here"
               className="input input-primary input-bordered w-full max-w-xs bg-transparent"
@@ -115,7 +166,7 @@ export default function Home() {
             <textarea
               name="body"
               onChange={onChnage}
-              value={note.body}
+              value={data.body}
               className="textarea textarea-primary textarea-bordered text-base h-24 bg-transparent"
               placeholder="Bio"
               required={true}
@@ -133,19 +184,19 @@ export default function Home() {
       </main>
 
       <div className=" grid grid-cols-3 gap-10 px-10 pb-40">
-        {fetchedNotes.map((note, idx) => (
+        {fetchedNotes.map((data: any, idx: number) => (
           <div
             key={idx}
-            className=" col-span-1 card w-96 bg-violet-300 shadow-xl"
+            className=" cursor-pointer col-span-1 card w-96 bg-violet-300 shadow-xl"
           >
             <div className="card-body">
-              <h2 className="card-title">{note.title}</h2>
-              <p>{note.tagline}</p>
-              <p>{note.body}</p>
+              <h2 className="card-title">{data.title}</h2>
+              <p>{data.tagline}</p>
+              <p>{data.body}</p>
               <div className="card-actions justify-end">
                 <button className="btn btn-primary">Edit</button>
                 <button
-                  onClick={() => deleteNote(note.id)}
+                  onClick={() => deleteNote(data.id)}
                   className="btn bg-red-600 text-white border-0 hover:bg-red-500"
                 >
                   Delete
@@ -154,7 +205,39 @@ export default function Home() {
             </div>
           </div>
         ))}
+
+        {/* <div className="btn-group col-span-3 mx-auto">
+          <button className="btn">1</button>
+          <button className="btn btn-active">2</button>
+          <button className="btn">3</button>
+          <button className="btn">4</button>
+        </div> */}
       </div>
     </>
   );
 }
+
+// export const getServerSideProps = async () => {
+//   let kushagra: Note[] = [];
+//   try {
+//     const data = await getDocs(notesCollectionRef);
+//     data.forEach((doc) => {
+//       console.log(doc.data().id);
+//       kushagra.push({
+//         id: doc.id,
+//         title: doc.data().title,
+//         tagline: doc.data().tagline,
+//         body: doc.data().body,
+//         isPinned: doc.data().isPinned,
+//       });
+//     });
+//   } catch (error) {
+//     console.log(error);
+//   }
+
+//   return {
+//     props: {
+//       kushagra,
+//     },
+//   };
+// };
