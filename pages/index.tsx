@@ -11,9 +11,12 @@ import {
   orderBy,
   query,
   setDoc,
+  startAfter,
 } from "@firebase/firestore";
 import Head from "next/head";
+import next from "next/types";
 import { useEffect, useState } from "react";
+import ReactPaginate from "react-paginate";
 
 const notesCollectionRef = collection(db, "notes");
 
@@ -34,54 +37,96 @@ export default function Home() {
   });
 
   const [fetchedNotes, setFetchedNotes] = useState<any[]>([]);
-  const [notes, setNotes] = useState([]);
-  const [lastNote, setLastNote] = useState(null);
+  const [notes, setNotes] = useState<any[]>([]);
+  const [lastNote, setLastNote] = useState({});
   const [currentPage, setCurrentPage] = useState(0);
+  const [firstPageNotes, setFirstPageNotes] = useState<any[]>([]);
 
-  const notesPerPage = 6;
-  const pageCount = Math.ceil(notes.length / notesPerPage);
+  const getPaginatedNotes = async () => {
+    // Query the first page of docs
+    const first = query(collection(db, "notes"), orderBy("title"), limit(3));
+    const documentSnapshots = await getDocs(first);
+
+    const data = documentSnapshots.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+
+    setFirstPageNotes(data);
+    // console.log(data);
+
+    // Get the last visible document
+    const lastVisible =
+      documentSnapshots.docs[documentSnapshots.docs.length - 1];
+
+    setLastNote(lastVisible);
+    // console.log("last", lastVisible);
+
+    // Construct a new query starting at this document,
+    // get the next 25 cities.
+    const next = query(
+      collection(db, "notes"),
+      orderBy("title"),
+      startAfter(lastVisible),
+      limit(6)
+    );
+    // console.log("next", next);
+  };
+
+  const handlePageChange = async ({ selected }: any) => {
+    // query for fetching next six notes
+    const nextPageNotes = query(
+      collection(db, "notes"),
+      orderBy("title"),
+      startAfter(lastNote),
+      limit(3)
+    );
+
+    const snapshot = await getDocs(nextPageNotes);
+    const data = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+    setFirstPageNotes(data);
+    setLastNote(snapshot.docs[snapshot.docs.length - 1]);
+    setCurrentPage(selected);
+    // getPaginatedNotes()
+    // console.log(data);
+    console.log("netxnotes", data);
+    // console.log("lastnote", setLastNote);
+  };
 
   useEffect(() => {
-    const fetchNotes = async () => {
-      const q = query(
-        notesCollectionRef,
-        // orderBy("title"),
-        limit(notesPerPage)
-      );
-
-      const snapshot = await getDocs(q);
-      // Query the first page of docs
-      const first = query(collection(db, "notes"), orderBy("title"), limit(6));
-      const documentSnapshots = await getDocs(first);
-      const data = documentSnapshots.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-
-      console.log(data)
-
-      // console.log(documentSnapshots)
-      // Get the last visible document
-      const lastVisible =
-        documentSnapshots.docs[documentSnapshots.docs.length - 1];
-      console.log("last", lastVisible);
-      // const notesRef = db
-      //   .collection("notes")
-      //   .orderBy("createdAt", "desc")
-      //   .limit(notesPerPage);
-      // const snapshot = await notesRef.get();
-      // const data = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-      // setNotes(data);
-      // setLastNote(snapshot.docs[snapshot.docs.length - 1]);
-    };
-    fetchNotes();
+    getPaginatedNotes();
   }, []);
+
+  // useEffect(() => {
+  //   const fetchNotes = async () => {
+  //     // query the first six of notes
+  //     const firstSixNotes = query(
+  //       notesCollectionRef,
+  //       orderBy("title"),
+  //       limit(6)
+  //     );
+  //     const documentSnapshots = await getDocs(firstSixNotes);
+  //     const data = documentSnapshots.docs.map((doc) => ({
+  //       id: doc.id,
+  //       ...doc.data(),
+  //     }));
+
+  //     // get last fetched note
+  //     const lastFetchedNote =
+  //       documentSnapshots.docs[documentSnapshots.docs.length - 1];
+
+  //     // set all notes and last note to specif states
+  //     setNotes(data);
+  //     setLastNote(lastFetchedNote);
+  //   };
+  //   fetchNotes();
+  // }, []);
 
   useEffect(() => {
     getNotes();
   }, []);
 
-  const onChnage = (
+  const onFormChange = (
     event: React.FormEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = event.target as
@@ -137,7 +182,7 @@ export default function Home() {
             </label>
             <input
               name="title"
-              onChange={onChnage}
+              onChange={onFormChange}
               value={data.title}
               type="text"
               placeholder="Type here"
@@ -151,7 +196,7 @@ export default function Home() {
             </label>
             <input
               name="tagline"
-              onChange={onChnage}
+              onChange={onFormChange}
               value={data.tagline}
               type="text"
               placeholder="Type here"
@@ -165,7 +210,7 @@ export default function Home() {
             </label>
             <textarea
               name="body"
-              onChange={onChnage}
+              onChange={onFormChange}
               value={data.body}
               className="textarea textarea-primary textarea-bordered text-base h-24 bg-transparent"
               placeholder="Bio"
@@ -183,11 +228,40 @@ export default function Home() {
         </div>
       </main>
 
+      {/* <div className=" grid grid-cols-3 pb-28">
+        {notes.map((note) => (
+          <div key={note.id} className=" col-span-1">
+            <h2>{note.title}</h2>
+            <p>{note.tagline}</p>
+            <p>{note.body}</p>
+            <p>{note.isPinned}</p>
+            <button
+              onClick={() => deleteNote(note.id)}
+              className="btn bg-red-600 text-white border-0 hover:bg-red-500"
+            >
+              Delete
+            </button>
+          </div>
+        ))}
+        <div>
+          <ReactPaginate
+            breakLabel="..."
+            nextLabel="next >"
+            pageCount={pageCount}
+            onPageChange={() => handlePageChange}
+            forcePage={currentPage}
+            pageRangeDisplayed={5}
+            previousLabel="< previous"
+            // renderOnZeroPageCount={null}
+          />
+        </div>
+      </div> */}
+
       <div className=" grid grid-cols-3 gap-10 px-10 pb-40">
-        {fetchedNotes.map((data: any, idx: number) => (
+        {firstPageNotes.map((data: any, idx: number) => (
           <div
             key={idx}
-            className=" cursor-pointer col-span-1 card w-96 bg-violet-300 shadow-xl"
+            className=" cursor-pointer col-span-3 md:col-span-1 card w-96 bg-violet-300 shadow-xl"
           >
             <div className="card-body">
               <h2 className="card-title">{data.title}</h2>
@@ -205,13 +279,13 @@ export default function Home() {
             </div>
           </div>
         ))}
-
-        {/* <div className="btn-group col-span-3 mx-auto">
-          <button className="btn">1</button>
-          <button className="btn btn-active">2</button>
-          <button className="btn">3</button>
-          <button className="btn">4</button>
-        </div> */}
+        <ReactPaginate
+          pageCount={4}
+          onPageChange={handlePageChange}
+          forcePage={currentPage}
+          nextLabel=""
+          previousLabel=""
+        />
       </div>
     </>
   );
