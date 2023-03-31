@@ -3,4 +3,9 @@ const nextConfig = {
   // reactStrictMode: true,
 }
 
-module.exports = nextConfig
+module.exports = {
+  nextConfig,
+  daisyui: {
+    themes: false,
+  },
+}
