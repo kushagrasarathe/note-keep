@@ -2,10 +2,7 @@ import { Dialog, Transition } from "@headlessui/react";
 import { ExclamationTriangleIcon } from "@heroicons/react/24/outline";
 
 import { Pagination } from "@mui/material";
-import Box from "@mui/material/Box";
-import Paper from "@mui/material/Paper";
-import Grid from "@mui/material/Unstable_Grid2";
-import { db, notesCollectionRef } from "@/src/configs/firebaseConfig";
+import { db, notesCollectionRef } from "../src/configs/firebaseConfig";
 import {
   addDoc,
   collection,
@@ -22,22 +19,12 @@ import {
   startAfter,
 } from "@firebase/firestore";
 import Head from "next/head";
-import next from "next/types";
 import { useEffect, useRef, useState, Fragment } from "react";
-import ReactPaginate from "react-paginate";
-import CreateNote from "@/src/components/CreateNote";
-import UpdateNote from "@/src/components/UpdateNote";
-
-interface Note {
-  id?: string;
-  title: string;
-  tagline: string;
-  body: string;
-  isPinned: boolean;
-}
+import CreateNote from "../src/components/CreateNote";
+import UpdateNote from "../src/components/UpdateNote";
 
 export default function Home() {
-  const [data, setData] = useState<Note>({
+  const [data, setData] = useState({
     title: "",
     tagline: "",
     body: "",
@@ -52,9 +39,9 @@ export default function Home() {
   // const [notes, setNotes] = useState<any[]>([]);
   const [lastNote, setLastNote] = useState({});
   const [currentPage, setCurrentPage] = useState(0);
-  const [firstPageNotes, setFirstPageNotes] = useState<any[]>([]);
-  const [pageCount, setPageCount] = useState<any>();
-  const [totalNotes, setTotalNotes] = useState<any>();
+  const [firstPageNotes, setFirstPageNotes] = useState([]);
+  const [pageCount, setPageCount] = useState();
+  const [totalNotes, setTotalNotes] = useState();
   const notesPerPage = 6;
 
   const getPaginatedNotes = async () => {
@@ -81,13 +68,15 @@ export default function Home() {
     setFirstPageNotes(data);
 
     // Get the last visible document
+
+    // wrap this part conditionally to fix the current behaviour
     const lastVisible =
       documentSnapshots.docs[documentSnapshots.docs.length - 1];
 
     setLastNote(lastVisible);
   };
 
-  const handlePageChange = async ({ selected }: any) => {
+  const handlePageChange = async ({ selected }) => {
     // query for fetching next set of notes
     const nextPageNotes = query(
       collection(db, "notes"),
@@ -107,12 +96,8 @@ export default function Home() {
     getPaginatedNotes();
   }, []);
 
-  const onFormChange = (
-    event: React.FormEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const { name, value } = event.target as
-      | HTMLInputElement
-      | HTMLTextAreaElement;
+  const onFormChange = (event) => {
+    const { name, value } = event.target;
     setData((prevNote) => ({
       ...prevNote,
       [name]: value,
@@ -125,7 +110,7 @@ export default function Home() {
     getPaginatedNotes();
   };
 
-  const deleteNote = async (id: string) => {
+  const deleteNote = async (id) => {
     const noteDoc = doc(db, "notes", id);
     await deleteDoc(noteDoc);
     getPaginatedNotes();
@@ -156,15 +141,15 @@ export default function Home() {
 
       <div className="p-8 mt-8">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-5">
-          {firstPageNotes.map((data: any, idx: number) => (
+          {firstPageNotes.map((data, idx) => (
             <div
               key={idx}
               onClick={() => setOpen((prevState) => !prevState)}
-              className=" card card-bordered rounded-md shadow-md bg-gray-100"
+              className=" card card-bordered rounded-md shadow-md bg-violet-300"
             >
               <div className="card-body">
                 <h2 className="card-title">{data.title}</h2>
-                <p>{data.tagline}</p>
+                <p className=" font-semibold">{data.tagline}</p>
                 <p>{data.body}</p>
                 <div className="card-actions justify-end">
                   <button
@@ -173,7 +158,7 @@ export default function Home() {
                   >
                     Delete
                   </button>
-                  <UpdateNote />
+                  <UpdateNote documentId={data.id} />
                 </div>
               </div>
             </div>

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, Fragment } from "react";
 import { Dialog, Transition } from "@headlessui/react";
 import { ExclamationTriangleIcon } from "@heroicons/react/24/outline";
-import { db, notesCollectionRef } from "@/src/configs/firebaseConfig";
+import { db, notesCollectionRef } from "../configs/firebaseConfig";
 import {
   addDoc,
   collection,
@@ -16,52 +16,73 @@ import {
   query,
   setDoc,
   startAfter,
+  updateDoc,
 } from "@firebase/firestore";
 
-interface Note {
-  id?: string;
-  title: string;
-  tagline: string;
-  body: string;
-  isPinned: boolean;
-}
+// interface Note {
+//   id?: string;
+//   title: string;
+//   tagline: string;
+//   body: string;
+//   isPinned: boolean;
+// }
 
-export default function CreateNote() {
-  const [data, setData] = useState<Note>({
-    title: "",
-    tagline: "",
-    body: "",
-    isPinned: false,
-  });
+// interface DocId {
+//   documentId: string;
+// }
+
+export default function UpdateNote({ documentId }) {
+  // const [data, setData] = useState<Note>({
+  //   title: "",
+  //   tagline: "",
+  //   body: "",
+  //   isPinned: false,
+  // });
+
+  const [tagline, setTagline] = useState("");
+
+  const [note, setNote] = useState();
 
   const [open, setOpen] = useState(false);
 
   const cancelButtonRef = useRef(null);
 
-  const onFormChange = (
-    event: React.FormEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const { name, value } = event.target as
-      | HTMLInputElement
-      | HTMLTextAreaElement;
-    setData((prevNote) => ({
-      ...prevNote,
-      [name]: value,
-    }));
+  const getNoteFromId = async (docId) => {
+    const docRef = doc(db, "notes", docId);
+    const docSnap = await getDoc(doc(db, "notes", docId));
+    console.log("test", tagline);
+
+    if (docSnap.exists()) {
+      // console.log(docSnap.data());
+      setNote(docSnap.data());
+    } else {
+      console.log("not found");
+    }
   };
 
-  const saveNote = async () => {
+  const updateNote = async (docId) => {
     console.log(data);
-    await addDoc(notesCollectionRef, data);
+    await updateDoc(doc(db, "users", docId), {
+      id: "",
+      title: "",
+      tagline: "",
+      body: "",
+      isPinned: "",
+    });
     // getPaginatedNotes();
   };
+
   return (
     <>
       <button
-        onClick={() => setOpen((prevState) => !prevState)}
+        onClick={() => {
+          setOpen((prevState) => !prevState);
+          getNoteFromId(documentId);
+          console.log(tagline);
+        }}
         className="btn btn-primary "
       >
-        New Note
+        Edit
       </button>
       <Transition.Root show={open} as={Fragment}>
         <Dialog
@@ -95,17 +116,18 @@ export default function CreateNote() {
               >
                 <Dialog.Panel className="  relative transform overflow-hidden rounded-lg bg-gray-50 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg">
                   <div className=" flex flex-col justify-center items-center p-5 rounded-md shadow-md">
-                  <div className=" text-xl font-semibold mb-3">
-                    <h1>Enter Details</h1>
-                  </div>
+                    <div className=" text-xl font-semibold my-3">
+                      <h1>Edit Details</h1>
+                    </div>
                     <div className="form-control w-full max-w-xs">
                       <label className="label">
                         <span className="label-text text-gray-600">Title</span>
                       </label>
                       <input
                         name="title"
-                        onChange={onFormChange}
-                        value={data.title}
+                        // onChange={onFormChange}
+                        // value={data.title}
+                        value={note?.title}
                         type="text"
                         placeholder="Type here"
                         className="input input-primary input-bordered w-full max-w-xs bg-transparent"
@@ -120,12 +142,13 @@ export default function CreateNote() {
                       </label>
                       <input
                         name="tagline"
-                        onChange={onFormChange}
-                        value={data.tagline}
+                        onChange={(e) => setTagline(e.target.value)}
+                        // value={tagline}
                         type="text"
                         placeholder="Type here"
                         className="input input-primary input-bordered w-full max-w-xs bg-transparent"
                         required={true}
+                        defaultValue={note?.tagline}
                       />
                     </div>
                     <div className="form-control w-full max-w-xs">
@@ -134,8 +157,8 @@ export default function CreateNote() {
                       </label>
                       <textarea
                         name="body"
-                        onChange={onFormChange}
-                        value={data.body}
+                        // onChange={onFormChange}
+                        value={note?.body}
                         className="textarea textarea-primary textarea-bordered text-base h-24 bg-transparent"
                         placeholder="Bio"
                         required={true}
@@ -146,9 +169,10 @@ export default function CreateNote() {
                     <button
                       type="button"
                       className="btn btn-primary mx-3"
-                      onClick={saveNote}
+                      onClick={() => getNoteFromId(documentId)}
+                      // onClick={updateNote}
                     >
-                      Save
+                      Update
                     </button>
 
                     <button

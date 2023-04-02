@@ -15,9 +15,6 @@
     "@headlessui/react": "^1.7.13",
     "@heroicons/react": "^2.0.17",
     "@mui/material": "^5.11.15",
-    "@types/node": "18.15.7",
-    "@types/react": "18.0.29",
-    "@types/react-dom": "18.0.11",
     "daisyui": "^2.51.5",
     "eslint": "8.36.0",
     "eslint-config-next": "13.2.4",
@@ -25,8 +22,7 @@
     "next": "13.2.4",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "react-paginate": "^8.1.4",
-    "typescript": "5.0.2"
+    "react-paginate": "^8.1.4"
   },
   "devDependencies": {
     "autoprefixer": "^10.4.14",

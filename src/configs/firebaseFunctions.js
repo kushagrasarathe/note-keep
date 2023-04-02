@@ -14,11 +14,3 @@ import {
   setDoc,
   startAfter,
 } from "@firebase/firestore";
-
-interface Note {
-  id?: string;
-  title: string;
-  tagline: string;
-  body: string;
-  isPinned: boolean;
-}

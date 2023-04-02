@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, Fragment } from "react";
 import { Dialog, Transition } from "@headlessui/react";
 import { ExclamationTriangleIcon } from "@heroicons/react/24/outline";
-import { db, notesCollectionRef } from "@/src/configs/firebaseConfig";
+import { db, notesCollectionRef } from "../configs/firebaseConfig";
 import {
   addDoc,
   collection,
@@ -18,16 +18,8 @@ import {
   startAfter,
 } from "@firebase/firestore";
 
-interface Note {
-  id?: string;
-  title: string;
-  tagline: string;
-  body: string;
-  isPinned: boolean;
-}
-
-export default function UpdateNote() {
-  const [data, setData] = useState<Note>({
+export default function CreateNote() {
+  const [data, setData] = useState({
     title: "",
     tagline: "",
     body: "",
@@ -38,12 +30,8 @@ export default function UpdateNote() {
 
   const cancelButtonRef = useRef(null);
 
-  const onFormChange = (
-    event: React.FormEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const { name, value } = event.target as
-      | HTMLInputElement
-      | HTMLTextAreaElement;
+  const onFormChange = (event) => {
+    const { name, value } = event.target;
     setData((prevNote) => ({
       ...prevNote,
       [name]: value,
@@ -53,6 +41,7 @@ export default function UpdateNote() {
   const saveNote = async () => {
     console.log(data);
     await addDoc(notesCollectionRef, data);
+    setOpen(false);
     // getPaginatedNotes();
   };
   return (
@@ -61,7 +50,7 @@ export default function UpdateNote() {
         onClick={() => setOpen((prevState) => !prevState)}
         className="btn btn-primary "
       >
-        Edit
+        New Note
       </button>
       <Transition.Root show={open} as={Fragment}>
         <Dialog
@@ -95,6 +84,9 @@ export default function UpdateNote() {
               >
                 <Dialog.Panel className="  relative transform overflow-hidden rounded-lg bg-gray-50 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg">
                   <div className=" flex flex-col justify-center items-center p-5 rounded-md shadow-md">
+                    <div className=" text-xl font-semibold my-3">
+                      <h1>Enter Details</h1>
+                    </div>
                     <div className="form-control w-full max-w-xs">
                       <label className="label">
                         <span className="label-text text-gray-600">Title</span>
