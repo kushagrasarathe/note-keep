@@ -18,6 +18,9 @@ import {
   startAfter,
 } from "@firebase/firestore";
 
+import toast, { Toaster } from "react-hot-toast";
+const notify = (msg) => toast.success(msg);
+
 export default function CreateNote() {
   const [data, setData] = useState({
     title: "",
@@ -39,9 +42,9 @@ export default function CreateNote() {
   };
 
   const saveNote = async () => {
-    console.log(data);
     await addDoc(notesCollectionRef, data);
     setOpen(false);
+    notify("Note Saved");
     // getPaginatedNotes();
   };
   return (
@@ -52,6 +55,8 @@ export default function CreateNote() {
       >
         New Note
       </button>
+      <Toaster position="top-center" />
+
       <Transition.Root show={open} as={Fragment}>
         <Dialog
           as="div"

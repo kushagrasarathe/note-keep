@@ -23,6 +23,7 @@ import { useEffect, useRef, useState, Fragment } from "react";
 import CreateNote from "../src/components/CreateNote";
 import UpdateNote from "../src/components/UpdateNote";
 import NoteCard from "../src/components/NoteCard";
+import useFetchNotes from "../src/hooks/useFetchNotes";
 
 export default function Home() {
   const [data, setData] = useState({
@@ -31,6 +32,11 @@ export default function Home() {
     body: "",
     isPinned: false,
   });
+
+  const [count, setCount] = useState(0);
+  const handleReRender = () => {
+    setCount((prevCount) => prevCount + 1);
+  };
 
   const [firstPageNotes, setFirstPageNotes] = useState([]);
   const [totalNotes, setTotalNotes] = useState();
@@ -91,20 +97,6 @@ export default function Home() {
     getPaginatedNotes();
   }, []);
 
-  const onFormChange = (event) => {
-    const { name, value } = event.target;
-    setData((prevNote) => ({
-      ...prevNote,
-      [name]: value,
-    }));
-  };
-
-  const saveNote = async () => {
-    console.log(data);
-    await addDoc(notesCollectionRef, data);
-    getPaginatedNotes();
-  };
-
   const deleteNote = async (id) => {
     const noteDoc = doc(db, "notes", id);
     await deleteDoc(noteDoc);
@@ -136,11 +128,17 @@ export default function Home() {
 
       <div className="p-8 mt-8">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-5">
-          {firstPageNotes.map((data, idx) => (
-            <div key={idx}>
-              <NoteCard data={data} deleteNote={() => deleteNote(data.id)} />
-            </div>
-          ))}
+          {firstPageNotes
+            .sort((a, b) => (a.isPinned ? -1 : 1))
+            .map((data, idx) => (
+              <div key={idx}>
+                <NoteCard
+                  handleReRender={handleReRender}
+                  data={data}
+                  deleteNote={() => deleteNote(data.id)}
+                />
+              </div>
+            ))}
         </div>
 
         <div className=" fixed bottom-10 w-full flex justify-center ">
@@ -157,62 +155,3 @@ export default function Home() {
     </>
   );
 }
-
-// export const getServerSideProps = async () => {
-//   let kushagra: Note[] = [];
-//   try {
-//     const data = await getDocs(notesCollectionRef);
-//     data.forEach((doc) => {
-//       console.log(doc.data().id);
-//       kushagra.push({
-//         id: doc.id,
-//         title: doc.data().title,
-//         tagline: doc.data().tagline,
-//         body: doc.data().body,
-//         isPinned: doc.data().isPinned,
-//       });
-//     });
-//   } catch (error) {
-//     console.log(error);
-//   }
-
-//   return {
-//     props: {
-//       kushagra,
-//     },
-//   };
-// };
-
-{
-  /* <ReactPaginate
-          pageCount={pageCount}
-          onPageChange={handlePageChange}
-          forcePage={currentPage}
-          nextLabel=""
-          previousLabel=""
-        /> */
-}
-
-// <div
-//   key={idx}
-//   onClick={() => setOpen((prevState) => !prevState)}
-//   className=" card card-bordered rounded-md shadow-md bg-violet-300"
-// >
-//   <div className="card-body">
-//     <div onClick={() => setPin((prev) => !prev)}>
-//       {pin ? <span>pinned</span> : <span>pin</span>}
-//     </div>
-//     <h2 className="card-title">{data.title}</h2>
-//     <p className=" font-semibold">{data.tagline}</p>
-//     <p>{data.body}</p>
-//     <div className="card-actions justify-end">
-//       <button
-//         onClick={() => deleteNote(data.id)}
-//         className="btn bg-red-600 text-white border-0 hover:bg-red-500"
-//       >
-//         Delete
-//       </button>
-//       <UpdateNote documentId={data.id} />
-//     </div>
-//   </div>
-// </div>

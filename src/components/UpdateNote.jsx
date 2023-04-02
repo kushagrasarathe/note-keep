@@ -13,7 +13,7 @@ import toast, { Toaster } from "react-hot-toast";
 
 const notify = (msg) => toast.success(msg);
 
-export default function UpdateNote({ documentId }) {
+export default function UpdateNote({ documentId, handleReRender }) {
   const [documentData, setDocumentData] = useState(null);
   const [formData, setFormData] = useState({
     title: "",
@@ -35,7 +35,6 @@ export default function UpdateNote({ documentId }) {
       setDocumentData(snapshot.data());
       setFormData(snapshot.data());
     } else {
-      // doc.data() will be undefined in this case
       console.log("No such document!");
     }
   };
@@ -45,9 +44,7 @@ export default function UpdateNote({ documentId }) {
   }, []);
 
   const getNoteFromId = async (docId) => {
-    const docRef = doc(db, "notes", docId);
     const docSnap = await getDoc(doc(db, "notes", docId));
-    // console.log("test", tagline);
 
     if (docSnap.exists()) {
       setNote(docSnap.data());
@@ -77,7 +74,6 @@ export default function UpdateNote({ documentId }) {
         onClick={() => {
           setOpen((prevState) => !prevState);
           getNoteFromId(documentId);
-          // console.log(tagline);
         }}
         className="btn btn-primary "
       >
