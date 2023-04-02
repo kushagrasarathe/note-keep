@@ -1,75 +1,74 @@
 import { useEffect, useRef, useState, Fragment } from "react";
 import { Dialog, Transition } from "@headlessui/react";
-import { ExclamationTriangleIcon } from "@heroicons/react/24/outline";
 import { db, notesCollectionRef } from "../configs/firebaseConfig";
 import {
   addDoc,
   collection,
-  deleteDoc,
   doc,
-  getCountFromServer,
   getDoc,
-  getDocs,
-  limit,
-  onSnapshot,
-  orderBy,
-  query,
   setDoc,
-  startAfter,
   updateDoc,
 } from "@firebase/firestore";
+import toast, { Toaster } from "react-hot-toast";
 
-// interface Note {
-//   id?: string;
-//   title: string;
-//   tagline: string;
-//   body: string;
-//   isPinned: boolean;
-// }
-
-// interface DocId {
-//   documentId: string;
-// }
+const notify = (msg) => toast.success(msg);
 
 export default function UpdateNote({ documentId }) {
-  // const [data, setData] = useState<Note>({
-  //   title: "",
-  //   tagline: "",
-  //   body: "",
-  //   isPinned: false,
-  // });
-
-  const [tagline, setTagline] = useState("");
+  const [documentData, setDocumentData] = useState(null);
+  const [formData, setFormData] = useState({
+    title: "",
+    tagline: "",
+    body: "",
+    isPinned: false,
+  });
 
   const [note, setNote] = useState();
-
   const [open, setOpen] = useState(false);
-
   const cancelButtonRef = useRef(null);
+
+  const fetchDoc = async () => {
+    const docRef = doc(db, "notes", documentId);
+
+    const snapshot = await getDoc(docRef);
+
+    if (snapshot.exists()) {
+      setDocumentData(snapshot.data());
+      setFormData(snapshot.data());
+    } else {
+      // doc.data() will be undefined in this case
+      console.log("No such document!");
+    }
+  };
+
+  useEffect(() => {
+    fetchDoc();
+  }, []);
 
   const getNoteFromId = async (docId) => {
     const docRef = doc(db, "notes", docId);
     const docSnap = await getDoc(doc(db, "notes", docId));
-    console.log("test", tagline);
+    // console.log("test", tagline);
 
     if (docSnap.exists()) {
-      // console.log(docSnap.data());
       setNote(docSnap.data());
     } else {
       console.log("not found");
     }
   };
 
-  const updateNote = async (docId) => {
-    console.log(data);
-    await updateDoc(doc(db, "users", docId), {
-      id: "",
-      title: "",
-      tagline: "",
-      body: "",
-      isPinned: "",
-    });
-    // getPaginatedNotes();
+  const handleFormChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prevData) => ({
+      ...prevData,
+      [name]: value,
+    }));
+  };
+
+  const updateNote = async (docID) => {
+    const docRef = doc(db, "notes", docID);
+    await updateDoc(docRef, formData);
+    setOpen(false);
+    notify("Note Updated");
   };
 
   return (
@@ -78,12 +77,13 @@ export default function UpdateNote({ documentId }) {
         onClick={() => {
           setOpen((prevState) => !prevState);
           getNoteFromId(documentId);
-          console.log(tagline);
+          // console.log(tagline);
         }}
         className="btn btn-primary "
       >
         Edit
       </button>
+      <Toaster position="top-center" />
       <Transition.Root show={open} as={Fragment}>
         <Dialog
           as="div"
@@ -124,10 +124,9 @@ export default function UpdateNote({ documentId }) {
                         <span className="label-text text-gray-600">Title</span>
                       </label>
                       <input
+                        value={formData.title}
+                        onChange={handleFormChange}
                         name="title"
-                        // onChange={onFormChange}
-                        // value={data.title}
-                        value={note?.title}
                         type="text"
                         placeholder="Type here"
                         className="input input-primary input-bordered w-full max-w-xs bg-transparent"
@@ -141,14 +140,14 @@ export default function UpdateNote({ documentId }) {
                         </span>
                       </label>
                       <input
+                        value={formData.tagline}
+                        onChange={handleFormChange}
                         name="tagline"
-                        onChange={(e) => setTagline(e.target.value)}
-                        // value={tagline}
                         type="text"
                         placeholder="Type here"
                         className="input input-primary input-bordered w-full max-w-xs bg-transparent"
                         required={true}
-                        defaultValue={note?.tagline}
+                        // defaultValue={note?.tagline}
                       />
                     </div>
                     <div className="form-control w-full max-w-xs">
@@ -156,9 +155,9 @@ export default function UpdateNote({ documentId }) {
                         <span className="label-text text-gray-600">Body</span>
                       </label>
                       <textarea
+                        value={formData.body}
+                        onChange={handleFormChange}
                         name="body"
-                        // onChange={onFormChange}
-                        value={note?.body}
                         className="textarea textarea-primary textarea-bordered text-base h-24 bg-transparent"
                         placeholder="Bio"
                         required={true}
@@ -169,8 +168,8 @@ export default function UpdateNote({ documentId }) {
                     <button
                       type="button"
                       className="btn btn-primary mx-3"
-                      onClick={() => getNoteFromId(documentId)}
-                      // onClick={updateNote}
+                      // onClick={() => getNoteFromId(documentId)}
+                      onClick={() => updateNote(documentId)}
                     >
                       Update
                     </button>

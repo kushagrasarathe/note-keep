@@ -22,6 +22,7 @@ import Head from "next/head";
 import { useEffect, useRef, useState, Fragment } from "react";
 import CreateNote from "../src/components/CreateNote";
 import UpdateNote from "../src/components/UpdateNote";
+import NoteCard from "../src/components/NoteCard";
 
 export default function Home() {
   const [data, setData] = useState({
@@ -31,17 +32,11 @@ export default function Home() {
     isPinned: false,
   });
 
-  const [open, setOpen] = useState(false);
-
-  const cancelButtonRef = useRef(null);
-
-  // const [fetchedNotes, setFetchedNotes] = useState<any[]>([]);
-  // const [notes, setNotes] = useState<any[]>([]);
-  const [lastNote, setLastNote] = useState({});
-  const [currentPage, setCurrentPage] = useState(0);
   const [firstPageNotes, setFirstPageNotes] = useState([]);
-  const [pageCount, setPageCount] = useState();
   const [totalNotes, setTotalNotes] = useState();
+  const [currentPage, setCurrentPage] = useState(0);
+  const [lastNote, setLastNote] = useState({});
+  const [pageCount, setPageCount] = useState();
   const notesPerPage = 6;
 
   const getPaginatedNotes = async () => {
@@ -69,7 +64,6 @@ export default function Home() {
 
     // Get the last visible document
 
-    // wrap this part conditionally to fix the current behaviour
     const lastVisible =
       documentSnapshots.docs[documentSnapshots.docs.length - 1];
 
@@ -88,6 +82,7 @@ export default function Home() {
     const snapshot = await getDocs(nextPageNotes);
     const data = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
     setFirstPageNotes(data);
+    // wrap this part conditionally to fix the current behaviour
     setLastNote(snapshot.docs[snapshot.docs.length - 1]);
     setCurrentPage(selected);
   };
@@ -142,28 +137,12 @@ export default function Home() {
       <div className="p-8 mt-8">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-5">
           {firstPageNotes.map((data, idx) => (
-            <div
-              key={idx}
-              onClick={() => setOpen((prevState) => !prevState)}
-              className=" card card-bordered rounded-md shadow-md bg-violet-300"
-            >
-              <div className="card-body">
-                <h2 className="card-title">{data.title}</h2>
-                <p className=" font-semibold">{data.tagline}</p>
-                <p>{data.body}</p>
-                <div className="card-actions justify-end">
-                  <button
-                    onClick={() => deleteNote(data.id)}
-                    className="btn bg-red-600 text-white border-0 hover:bg-red-500"
-                  >
-                    Delete
-                  </button>
-                  <UpdateNote documentId={data.id} />
-                </div>
-              </div>
+            <div key={idx}>
+              <NoteCard data={data} deleteNote={() => deleteNote(data.id)} />
             </div>
           ))}
         </div>
+
         <div className=" fixed bottom-10 w-full flex justify-center ">
           <div>
             <Pagination
@@ -213,3 +192,27 @@ export default function Home() {
           previousLabel=""
         /> */
 }
+
+// <div
+//   key={idx}
+//   onClick={() => setOpen((prevState) => !prevState)}
+//   className=" card card-bordered rounded-md shadow-md bg-violet-300"
+// >
+//   <div className="card-body">
+//     <div onClick={() => setPin((prev) => !prev)}>
+//       {pin ? <span>pinned</span> : <span>pin</span>}
+//     </div>
+//     <h2 className="card-title">{data.title}</h2>
+//     <p className=" font-semibold">{data.tagline}</p>
+//     <p>{data.body}</p>
+//     <div className="card-actions justify-end">
+//       <button
+//         onClick={() => deleteNote(data.id)}
+//         className="btn bg-red-600 text-white border-0 hover:bg-red-500"
+//       >
+//         Delete
+//       </button>
+//       <UpdateNote documentId={data.id} />
+//     </div>
+//   </div>
+// </div>
