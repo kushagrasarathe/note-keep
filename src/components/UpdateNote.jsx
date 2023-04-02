@@ -13,7 +13,7 @@ import toast, { Toaster } from "react-hot-toast";
 
 const notify = (msg) => toast.success(msg);
 
-export default function UpdateNote({ documentId, handleReRender }) {
+export default function UpdateNote({ documentId, setUpdate }) {
   const [documentData, setDocumentData] = useState(null);
   const [formData, setFormData] = useState({
     title: "",
@@ -65,6 +65,7 @@ export default function UpdateNote({ documentId, handleReRender }) {
     const docRef = doc(db, "notes", docID);
     await updateDoc(docRef, formData);
     setOpen(false);
+    setUpdate(true);
     notify("Note Updated");
   };
 

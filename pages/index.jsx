@@ -4,46 +4,37 @@ import { ExclamationTriangleIcon } from "@heroicons/react/24/outline";
 import { Pagination } from "@mui/material";
 import { db, notesCollectionRef } from "../src/configs/firebaseConfig";
 import {
-  addDoc,
   collection,
   deleteDoc,
   doc,
   getCountFromServer,
-  getDoc,
   getDocs,
   limit,
-  onSnapshot,
   orderBy,
   query,
-  setDoc,
   startAfter,
 } from "@firebase/firestore";
 import Head from "next/head";
 import { useEffect, useRef, useState, Fragment } from "react";
 import CreateNote from "../src/components/CreateNote";
-import UpdateNote from "../src/components/UpdateNote";
 import NoteCard from "../src/components/NoteCard";
-import useFetchNotes from "../src/hooks/useFetchNotes";
+
+import { toast } from "react-hot-toast";
+const notify = (msg) => toast.success(msg);
 
 export default function Home() {
-  const [data, setData] = useState({
-    title: "",
-    tagline: "",
-    body: "",
-    isPinned: false,
-  });
-
-  const [count, setCount] = useState(0);
-  const handleReRender = () => {
-    setCount((prevCount) => prevCount + 1);
-  };
-
   const [firstPageNotes, setFirstPageNotes] = useState([]);
   const [totalNotes, setTotalNotes] = useState();
   const [currentPage, setCurrentPage] = useState(0);
   const [lastNote, setLastNote] = useState({});
   const [pageCount, setPageCount] = useState();
+  const [isUpdated, setIsUpdated] = useState(false);
+  const [isNotePinned, setIsNotePinned] = useState(false);
   const notesPerPage = 6;
+
+  useEffect(() => {
+    getPaginatedNotes();
+  }, [isUpdated, isNotePinned]);
 
   const getPaginatedNotes = async () => {
     const snapshot = await getCountFromServer(notesCollectionRef);
@@ -93,14 +84,11 @@ export default function Home() {
     setCurrentPage(selected);
   };
 
-  useEffect(() => {
-    getPaginatedNotes();
-  }, []);
-
   const deleteNote = async (id) => {
     const noteDoc = doc(db, "notes", id);
     await deleteDoc(noteDoc);
     getPaginatedNotes();
+    notify("Note Deleted");
   };
 
   return (
@@ -133,7 +121,8 @@ export default function Home() {
             .map((data, idx) => (
               <div key={idx}>
                 <NoteCard
-                  handleReRender={handleReRender}
+                  setUpdate={setIsUpdated}
+                  isNotePinned={setIsNotePinned}
                   data={data}
                   deleteNote={() => deleteNote(data.id)}
                 />

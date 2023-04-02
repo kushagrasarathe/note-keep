@@ -5,6 +5,15 @@ const nextConfig = {
 
 module.exports = {
   nextConfig,
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'img.icons8.com'
+      }
+
+    ]
+  },
   daisyui: {
     themes: false,
   },
